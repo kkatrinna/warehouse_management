@@ -63,6 +63,7 @@
 bash
 git clone https://github.com/yourusername/warehouse-management.git
 cd warehouse-management
+
 **2. Создать виртуальное окружение**
 Для Windows:
 bash
@@ -76,18 +77,23 @@ source venv/bin/activate
 **3. Установить зависимости**
 bash
 pip install -r requirements.txt
+
 **4. Применить миграции**
 bash
 python manage.py makemigrations
 python manage.py migrate
+
 **5. Создать суперпользователя (администратора)**
 bash
 python manage.py createsuperuser
+
 **6. Собрать статические файлы**
 bash
 python manage.py collectstatic
+
 **7. Запустить сервер разработки**
 bash
 python manage.py runserver
+
 **8. Открыть в браузере**
 http://127.0.0.1:8000
