@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Создание накладной{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-file-text"></i> Создание накладной</h1>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-search"></i> Поиск товаров</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <input type="text"
+                           id="productSearch"
+                           class="form-control"
+                           placeholder="Введите название или артикул...">
+                </div>
+
+                <div id="searchResults" class="list-group" style="max-height: 400px; overflow-y: auto;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-cart"></i> Товары в накладной</h5>
+            </div>
+            <div class="card-body">
+                <div id="cartItems" class="mb-3">
+                </div>
+
+                <div class="alert alert-info" id="emptyCart">
+                    <i class="bi bi-info-circle"></i> Добавьте товары из списка слева
+                </div>
+
+                <div class="table-responsive d-none" id="cartTable">
+                    <table class="table table-sm table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Товар</th>
+                                <th>Кол-во</th>
+                                <th>Цена</th>
+                                <th>Сумма</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartBody">
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-info">
+                                <td colspan="3" class="text-end"><strong>Итого:</strong></td>
+                                <td><strong id="cartTotal">0.00</strong> ₽</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <form method="post" id="invoiceForm">
+                    {% csrf_token %}
+                    {{ form.items }}
+
+                    <button type="submit" class="btn btn-success w-100 mt-3" id="submitBtn" disabled>
+                        <i class="bi bi-file-pdf"></i> Сформировать накладную и PDF
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    let cart = [];
+
+    $('#productSearch').on('input', function() {
+        let query = $(this).val();
+
+        if (query.length < 2) {
+            $('#searchResults').empty();
+            return;
+        }
+
+        $.ajax({
+            url: '{% url "warehouse:api_product_search" %}',
+            data: { q: query },
+            success: function(data) {
+                let html = '';
+                data.forEach(function(product) {
+                    html += `
+                        <a href="#" class="list-group-item list-group-item-action"
+                           onclick="addToCart(${product.id}, '${product.name}', ${product.price}, '${product.sku}')">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>${product.name}</strong><br>
+                                    <small class="text-muted">Арт: ${product.sku}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-info">${product.price} ₽</span><br>
+                                    <small class="text-${product.quantity > 0 ? 'success' : 'danger'}">
+                                        В наличии: ${product.quantity}
+                                    </small>
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                });
+
+                if (data.length === 0) {
+                    html = '<div class="list-group-item text-muted">Ничего не найдено</div>';
+                }
+
+                $('#searchResults').html(html);
+            }
+        });
+    });
+
+    window.addToCart = function(id, name, price, sku) {
+        let existing = cart.find(item => item.id === id);
+
+        if (existing) {
+            existing.quantity++;
+        } else {
+            cart.push({
+                id: id,
+                name: name,
+                price: price,
+                sku: sku,
+                quantity: 1
+            });
+        }
+
+        updateCart();
+        $('#productSearch').val('').trigger('input');
+    };
+
+    function updateCart() {
+        if (cart.length === 0) {
+            $('#emptyCart').removeClass('d-none');
+            $('#cartTable').addClass('d-none');
+            $('#submitBtn').prop('disabled', true);
+            $('#id_items').val('');
+            return;
+        }
+
+        $('#emptyCart').addClass('d-none');
+        $('#cartTable').removeClass('d-none');
+
+        let html = '';
+        let total = 0;
+
+        cart.forEach(function(item, index) {
+            let sum = item.price * item.quantity;
+            total += sum;
+
+            html += `
+                <tr>
+                    <td>
+                        ${item.name}<br>
+                        <small class="text-muted">${item.sku}</small>
+                    </td>
+                    <td style="width: 100px">
+                        <input type="number" class="form-control form-control-sm"
+                               value="${item.quantity}" min="1"
+                               onchange="updateQuantity(${index}, this.value)">
+                    </td>
+                    <td class="text-end">${item.price} ₽</td>
+                    <td class="text-end">${sum.toFixed(2)} ₽</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="removeFromCart(${index})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        $('#cartBody').html(html);
+        $('#cartTotal').text(total.toFixed(2));
+        $('#submitBtn').prop('disabled', false);
+
+        $('#id_items').val(JSON.stringify(cart));
+    }
+
+    window.updateQuantity = function(index, quantity) {
+        cart[index].quantity = parseInt(quantity);
+        updateCart();
+    };
+
+    window.removeFromCart = function(index) {
+        cart.splice(index, 1);
+        updateCart();
+    };
+
+    $('#productSearch').keypress(function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

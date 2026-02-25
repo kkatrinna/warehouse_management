@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-{% if form.instance.pk %}pencil-square{% else %}plus-circle{% endif %}"></i>
+                    {{ title }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {{ form|crispy }}
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% if form.instance.pk %}{% url 'warehouse:product_detail' form.instance.pk %}{% else %}{% url 'warehouse:product_list' %}{% endif %}" 
+                           class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> 
+                            {% if form.instance.pk %}Сохранить изменения{% else %}Добавить товар{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const nameField = document.getElementById('id_name');
+        const skuField = document.getElementById('id_sku');
+        
+        if (nameField && skuField && !skuField.value) {
+            nameField.addEventListener('blur', function() {
+                if (!skuField.value) {
+                    const name = nameField.value;
+                    const sku = name.substring(0, 3).toUpperCase() + 
+                               Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                    skuField.value = sku;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

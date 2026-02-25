@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-arrow-left-right"></i> {{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {{ form|crispy }}
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        <span id="stockInfo">
+                            {% if form.product.value %}
+                                {% with product=form.product.field.queryset.get %}
+                                    Доступно на складе: <strong>{{ product.quantity }} шт.</strong>
+                                {% endwith %}
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="javascript:history.back()" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const productSelect = document.getElementById('id_product');
+        const movementTypeSelect = document.getElementById('id_movement_type');
+        const quantityInput = document.getElementById('id_quantity');
+        const stockInfo = document.getElementById('stockInfo');
+        
+        function updateStockInfo() {
+            const productId = productSelect.value;
+            if (productId) {
+                fetch(`/api/product-stock/${productId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        stockInfo.innerHTML = `Доступно на складе: <strong>${data.quantity} шт.</strong>`;
+
+                        if (movementTypeSelect.value === 'out') {
+                            const max = data.quantity;
+                            quantityInput.max = max;
+                            quantityInput.setAttribute('data-max', max);
+                            
+                            if (parseInt(quantityInput.value) > max) {
+                                quantityInput.value = max;
+                            }
+                        }
+                    });
+            }
+        }
+        
+        if (productSelect) {
+            productSelect.addEventListener('change', updateStockInfo);
+        }
+        
+        if (movementTypeSelect) {
+            movementTypeSelect.addEventListener('change', function() {
+                if (this.value === 'out') {
+                    quantityInput.max = quantityInput.getAttribute('data-max') || 999999;
+                } else {
+                    quantityInput.removeAttribute('max');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

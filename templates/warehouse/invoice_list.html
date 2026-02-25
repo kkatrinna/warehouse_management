@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Список накладных{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-file-text"></i> Накладные</h1>
+    <a href="{% url 'warehouse:invoice_generate' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Создать накладную
+    </a>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>№ накладной</th>
+                            <th>Дата создания</th>
+                            <th>Создал</th>
+                            <th>Кол-во позиций</th>
+                            <th>Сумма</th>
+                            <th>PDF</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in page_obj %}
+                            <tr>
+                                <td>
+                                    <strong>{{ invoice.number }}</strong>
+                                </td>
+                                <td>{{ invoice.created_at|date:"d.m.Y H:i" }}</td>
+                                <td>{{ invoice.created_by.get_full_name|default:invoice.created_by.username }}</td>
+                                <td class="text-center">{{ invoice.items.count }}</td>
+                                <td class="text-end fw-bold">
+                                    {% with total=0 %}
+                                        {% for item in invoice.items.all %}
+                                            {% with total=total|add:item.get_total %}
+                                            {% endwith %}
+                                        {% endfor %}
+                                        {{ invoice.items.all|length|yesno:"Сумма,0" }}
+                                    {% endwith %}
+                                </td>
+                                <td class="text-center">
+                                    {% if invoice.pdf_file %}
+                                        <a href="{% url 'warehouse:invoice_download_pdf' invoice.pk %}" 
+                                           class="btn btn-sm btn-success" title="Скачать PDF">
+                                            <i class="bi bi-file-pdf"></i>
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'warehouse:invoice_detail' invoice.pk %}" 
+                                       class="btn btn-sm btn-info">
+                                        <i class="bi bi-eye"></i> Просмотр
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">&laquo; Первая</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Следующая</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Последняя &raquo;</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-file-text fs-1 text-muted"></i>
+                <h3 class="text-muted mt-3">Нет накладных</h3>
+                <p class="text-muted">Создайте первую накладную</p>
+                <a href="{% url 'warehouse:invoice_generate' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Создать накладную
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
