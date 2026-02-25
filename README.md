@@ -58,55 +58,36 @@
 - pip (менеджер пакетов Python)
 - Git (опционально)
 
-Пошаговая инструкция
-1. Клонировать репозиторий
+### Пошаговая инструкция
+**1. Клонировать репозиторий**
 bash
 git clone https://github.com/yourusername/warehouse-management.git
 cd warehouse-management
-2. Создать виртуальное окружение
+**2. Создать виртуальное окружение**
 Для Windows:
-
 bash
 python -m venv venv
 venv\Scripts\activate
 Для Linux/Mac:
-
 bash
 python3 -m venv venv
 source venv/bin/activate
-После активации в терминале появится (venv) - это значит, что виртуальное окружение работает.
 
-3. Установить зависимости
+**3. Установить зависимости**
 bash
 pip install -r requirements.txt
-4. Применить миграции
+**4. Применить миграции**
 bash
 python manage.py makemigrations
 python manage.py migrate
-5. Создать суперпользователя (администратора)
+**5. Создать суперпользователя (администратора)**
 bash
 python manage.py createsuperuser
-Система запросит:
-
-Username: - введите имя пользователя (например, admin)
-
-Email address: - введите email (например, admin@example.com)
-
-Password: - введите пароль (символы не отображаются)
-
-Password (again): - повторите пароль
-
-6. Собрать статические файлы
+**6. Собрать статические файлы**
 bash
 python manage.py collectstatic
-Когда появится запрос Type 'yes' to continue, or 'no' to cancel:, введите yes
-
-7. Запустить сервер разработки
+**7. Запустить сервер разработки**
 bash
 python manage.py runserver
-8. Открыть в браузере
-Перейдите по адресу:
-
-text
+**8. Открыть в браузере**
 http://127.0.0.1:8000
-Быстр
